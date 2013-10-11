@@ -552,6 +552,8 @@ class StatsController < ApplicationController
   end
 
   def get_stats_tags
+    tagcloud = TagCloud.new
+    tagcloud.get_stats_tags( current_user )
     # tag cloud code inspired by this article
     #  http://www.juixe.com/techknow/index.php/2006/07/15/acts-as-taggable-tag-cloud/
 
