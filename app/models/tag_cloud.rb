@@ -1,9 +1,9 @@
 class TagCloud
   # tag cloud code inspired by this article
   #  http://www.juixe.com/techknow/index.php/2006/07/15/acts-as-taggable-tag-cloud/
-  attr_reader :user, :tags_for_cloud, :tags_min, :tags_divisor, :tags_90days, :tags_min_90days, :tags_divisor_90days
+  attr_reader :user, :tags_for_cloud, :tags_min, :tags_divisor
   
-  def initialize( user, cut_off )
+  def initialize( user, cut_off = nil )
     @user = user
     @cut_off = cut_off
   end
@@ -11,7 +11,10 @@ class TagCloud
   # TODO: parameterize limit
   def tags
     levels=10
-    @tags_for_cloud = Tag.find_by_sql([sql_90days, user.id]).sort_by { |tag| tag.name.downcase }
+    params = [sql( @cut_off ), user.id]
+    params += [@cut_off, @cut_off] if @cut_off
+    
+    @tags_for_cloud = Tag.find_by_sql( params ).sort_by { |tag| tag.name.downcase }
 
     max, @tags_min = 0, 0
     @tags_for_cloud.each { |t|
@@ -20,20 +23,9 @@ class TagCloud
     }
 
     @tags_divisor = ((max - @tags_min) / levels) + 1
-    @tags_90days = Tag.find_by_sql(
-      [sql_90days( @cut_off ), user.id, @cut_off, @cut_off]
-    ).sort_by { |tag| tag.name.downcase }
-
-    max_90days, @tags_min_90days = 0, 0
-    @tags_90days.each { |t|
-      max_90days = [t.count.to_i, max_90days].max
-      @tags_min_90days = [t.count.to_i, @tags_min_90days].min
-    }
-
-    @tags_divisor_90days = ((max_90days - @tags_min_90days) / levels) + 1
   end
   private
-  def sql_90days( cut_off = nil )
+  def sql( cut_off = nil )
     query = "SELECT tags.id, tags.name AS name, count(*) AS count"
     query << " FROM taggings, tags, todos"
     query << " WHERE tags.id = tag_id"
