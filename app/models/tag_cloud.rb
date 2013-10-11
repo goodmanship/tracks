@@ -19,9 +19,12 @@ class TagCloud
   end
   
   def tags
-    params = [sql( @cut_off ), user.id]
-    params += [@cut_off, @cut_off] if @cut_off
-    Tag.find_by_sql( params ).sort_by { |tag| tag.name.downcase }
+    unless @tags
+      params = [sql( @cut_off ), user.id]
+      params += [@cut_off, @cut_off] if @cut_off
+      @tags = Tag.find_by_sql( params ).sort_by { |tag| tag.name.downcase }
+    end
+    @tags
   end
 
   private
