@@ -8,16 +8,6 @@ class TagCloud
     @cut_off = cut_off
   end
   
-  def compute
-    max, @min = 0, 0
-    tags.each { |t|
-      max = [t.count.to_i, max].max
-      @min = [t.count.to_i, @min].min
-    }
-
-    @divisor = ((max - @min) / levels) + 1
-  end
-  
   def tags
     unless @tags
       params = [sql( @cut_off ), user.id]
@@ -26,8 +16,24 @@ class TagCloud
     end
     @tags
   end
-
+  
+  def min
+    0
+  end
+  
+  def divisor
+    @divisor ||= ((max - min) / levels) + 1
+  end
+  
   private
+  
+  def max
+    tag_counts.max
+  end
+  
+  def tag_counts
+    @tag_counts ||= tags.map{ |t| t.count.to_i }
+  end
   
   def levels
     10
