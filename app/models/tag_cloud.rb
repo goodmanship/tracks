@@ -11,7 +11,7 @@ class TagCloud
   # TODO: parameterize limit
   def tags
     levels=10
-    @tags_for_cloud = Tag.find_by_sql(sql).sort_by { |tag| tag.name.downcase }
+    @tags_for_cloud = Tag.find_by_sql([sql_90days, user.id]).sort_by { |tag| tag.name.downcase }
 
     max, @tags_min = 0, 0
     @tags_for_cloud.each { |t|
@@ -21,7 +21,7 @@ class TagCloud
 
     @tags_divisor = ((max - @tags_min) / levels) + 1
     @tags_90days = Tag.find_by_sql(
-      [sql_90days, user.id, @cut_off, @cut_off]
+      [sql_90days( @cut_off ), user.id, @cut_off, @cut_off]
     ).sort_by { |tag| tag.name.downcase }
 
     max_90days, @tags_min_90days = 0, 0
@@ -33,26 +33,17 @@ class TagCloud
     @tags_divisor_90days = ((max_90days - @tags_min_90days) / levels) + 1
   end
   private
-  def sql
-    query = "SELECT tags.id, name, count(*) AS count"
-    query << " FROM taggings, tags, todos"
-    query << " WHERE tags.id = tag_id"
-    query << " AND taggings.taggable_id = todos.id"
-    query << " AND todos.user_id="+user.id.to_s+" "
-    query << " AND taggings.taggable_type='Todo' "
-    query << " GROUP BY tags.id, tags.name"
-    query << " ORDER BY count DESC, name"
-    query << " LIMIT 100"
-  end
-  def sql_90days
+  def sql_90days( cut_off = nil )
     query = "SELECT tags.id, tags.name AS name, count(*) AS count"
     query << " FROM taggings, tags, todos"
     query << " WHERE tags.id = tag_id"
     query << " AND todos.user_id=? "
     query << " AND taggings.taggable_type='Todo' "
     query << " AND taggings.taggable_id=todos.id "
-    query << " AND (todos.created_at > ? OR "
-    query << "      todos.completed_at > ?) "
+    if cut_off
+      query << " AND (todos.created_at > ? OR "
+      query << "      todos.completed_at > ?) "
+    end
     query << " GROUP BY tags.id, tags.name"
     query << " ORDER BY count DESC, name"
     query << " LIMIT 100"
